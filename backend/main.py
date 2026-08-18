@@ -27,6 +27,8 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import Response
 
 from groq import Groq
+# Ensure backend directory is in sys.path for local imports
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from config import (
     BASE_DIR, ENV,
@@ -400,56 +402,33 @@ async def chat_endpoint(request: Request):
             log_interaction(session_id, question, simple_reply, GROQ_MODEL, dur, [])
             return {"answer": simple_reply, "session_id": session_id, "model": GROQ_MODEL}
 
+        # Step 1: Direct Smart RAG Retrieval
+        kb_results = get_engine().search(question, top_k=3)
+        if kb_results:
+            context_text = "\n\n---\n\n".join([r.chunk for r in kb_results])
+            context_block = f"\n\n==================================================\nINFORMASI TERVERIFIKASI DARI BASIS DATA RESMI SEASOLDIER:\n{context_text}\n=================================================="
+            effective_system_prompt = SYSTEM_PROMPT + context_block
+        else:
+            effective_system_prompt = SYSTEM_PROMPT
+
         # Build messages with history
         history = load_session(session_id)
-        messages = [{"role": "system", "content": SYSTEM_PROMPT}]
+        messages = [{"role": "system", "content": effective_system_prompt}]
         messages.extend(history)
         messages.append({"role": "user", "content": question})
 
-        # Step 1: Initial call with tools
-        tool_calls_log = []
+        # Generate response
         response = client.chat.completions.create(
             model=GROQ_MODEL,
             messages=messages,
-            tools=TOOL_SCHEMAS,
-            tool_choice="auto",
             temperature=GROQ_TEMPERATURE,
             max_tokens=GROQ_MAX_TOKENS,
         )
 
-        response_message = response.choices[0].message
-
-        # Step 2: Handle tool calls if requested
-        if response_message.tool_calls:
-            messages.append(response_message)
-            for tc in response_message.tool_calls:
-                func_name = tc.function.name
-                func_args = tc.function.arguments
-                tool_result = execute_tool(func_name, func_args)
-                tool_calls_log.append({
-                    "tool": func_name,
-                    "arguments": func_args,
-                    "result_len": len(tool_result),
-                })
-                messages.append({
-                    "tool_call_id": tc.id,
-                    "role": "tool",
-                    "name": func_name,
-                    "content": tool_result,
-                })
-
-            # Step 3: Second call to generate final answer
-            second_response = client.chat.completions.create(
-                model=GROQ_MODEL,
-                messages=messages,
-                temperature=GROQ_TEMPERATURE,
-                max_tokens=GROQ_MAX_TOKENS,
-            )
-            final_answer = second_response.choices[0].message.content or ""
-        else:
-            final_answer = response_message.content or ""
-
-        final_answer = sanitize_response_text(final_answer)
+        raw_answer = response.choices[0].message.content or ""
+        # Strip any <think> tags if present
+        clean_answer = re.sub(r"<think>[\s\S]*?</think>", "", raw_answer).strip()
+        final_answer = sanitize_response_text(clean_answer)
 
         # Update and save session
         history.append({"role": "user", "content": question})
@@ -457,14 +436,14 @@ async def chat_endpoint(request: Request):
         save_session(session_id, history)
 
         duration_ms = int((time.time() - start_time) * 1000)
-        log_interaction(session_id, question, final_answer, GROQ_MODEL, duration_ms, tool_calls_log)
+        log_interaction(session_id, question, final_answer, GROQ_MODEL, duration_ms, [{"tool": "direct_rag", "chunks": len(kb_results)}])
 
         return {
             "answer": final_answer,
             "session_id": session_id,
             "model": GROQ_MODEL,
             "duration_ms": duration_ms,
-            "tools_used": len(tool_calls_log),
+            "tools_used": len(kb_results),
         }
 
     except Exception as e:
@@ -492,7 +471,6 @@ async def chat_stream_endpoint(request: Request):
 
         async def event_generator():
             start_time = time.time()
-            tool_calls_log = []
 
             # Check simple greeting
             simple_reply = _check_simple_intent(question)
@@ -503,43 +481,28 @@ async def chat_stream_endpoint(request: Request):
                 log_interaction(session_id, question, simple_reply, GROQ_MODEL, dur, [])
                 return
 
+            # Notify frontend of knowledge base retrieval
+            yield f"data: {json.dumps({'type': 'tool_start', 'tools': ['search_knowledge_base']})}\n\n"
+
+            # Direct Smart RAG search
+            kb_results = get_engine().search(question, top_k=3)
+            if kb_results:
+                context_text = "\n\n---\n\n".join([r.chunk for r in kb_results])
+                context_block = f"\n\n==================================================\nINFORMASI TERVERIFIKASI DARI BASIS DATA RESMI SEASOLDIER:\n{context_text}\n=================================================="
+                effective_system_prompt = SYSTEM_PROMPT + context_block
+            else:
+                effective_system_prompt = SYSTEM_PROMPT
+
             history = load_session(session_id)
-            messages = [{"role": "system", "content": SYSTEM_PROMPT}]
+            messages = [{"role": "system", "content": effective_system_prompt}]
             messages.extend(history)
             messages.append({"role": "user", "content": question})
 
-            # Call with tools
+            # Stream from Groq
+            full_answer = ""
+            in_think = False
+
             try:
-                first_response = client.chat.completions.create(
-                    model=GROQ_MODEL,
-                    messages=messages,
-                    tools=TOOL_SCHEMAS,
-                    tool_choice="auto",
-                    temperature=GROQ_TEMPERATURE,
-                    max_tokens=GROQ_MAX_TOKENS,
-                )
-            except Exception as e:
-                yield f"data: {json.dumps({'type': 'error', 'message': f'Gagal menghubungi model: {e}'})}\n\n"
-                return
-
-            response_msg = first_response.choices[0].message
-
-            if response_msg.tool_calls:
-                yield f"data: {json.dumps({'type': 'tool_start', 'tools': [tc.function.name for tc in response_msg.tool_calls]})}\n\n"
-                messages.append(response_msg)
-                for tc in response_msg.tool_calls:
-                    fname = tc.function.name
-                    fargs = tc.function.arguments
-                    tool_res = execute_tool(fname, fargs)
-                    tool_calls_log.append({"tool": fname, "arguments": fargs, "result_len": len(tool_res)})
-                    messages.append({
-                        "tool_call_id": tc.id,
-                        "role": "tool",
-                        "name": fname,
-                        "content": tool_res,
-                    })
-
-                # Stream final completion
                 stream = client.chat.completions.create(
                     model=GROQ_MODEL,
                     messages=messages,
@@ -548,16 +511,56 @@ async def chat_stream_endpoint(request: Request):
                     stream=True,
                 )
 
-                full_answer = ""
                 for chunk in stream:
                     delta = chunk.choices[0].delta
-                    if delta.content:
-                        full_answer += delta.content
-                        yield f"data: {json.dumps({'type': 'token', 'content': delta.content})}\n\n"
-            else:
-                full_answer = response_msg.content or ""
-                sanitized = sanitize_response_text(full_answer)
-                yield f"data: {json.dumps({'type': 'token', 'content': sanitized})}\n\n"
+                    token = delta.content or ""
+                    if not token:
+                        continue
+
+                    # Filter out <think> reasoning tokens
+                    if "<think>" in token:
+                        in_think = True
+                        token = token.split("<think>")[0]
+                    if "</think>" in token:
+                        in_think = False
+                        token = token.split("</think>")[-1]
+
+                    if not in_think and token:
+                        full_answer += token
+                        yield f"data: {json.dumps({'type': 'token', 'content': token})}\n\n"
+
+            except Exception as e:
+                logger.error(f"Stream generation error: {e}", exc_info=True)
+                # Fallback to fast model non-stream if stream fails
+                try:
+                    fb_res = client.chat.completions.create(
+                        model=GROQ_MODEL_FAST,
+                        messages=messages,
+                        temperature=GROQ_TEMPERATURE,
+                        max_tokens=GROQ_MAX_TOKENS,
+                    )
+                    raw_fb = fb_res.choices[0].message.content or ""
+                    clean_fb = re.sub(r"<think>[\s\S]*?</think>", "", raw_fb).strip()
+                    full_answer = sanitize_response_text(clean_fb)
+                    yield f"data: {json.dumps({'type': 'token', 'content': full_answer})}\n\n"
+                except Exception as e2:
+                    logger.error(f"Fallback generation error: {e2}", exc_info=True)
+                    yield f"data: {json.dumps({'type': 'error', 'message': 'Maaf, terjadi kendala saat memproses jawaban. Silakan coba sesaat lagi.'})}\n\n"
+                    return
+
+            # Clean and sanitize full answer before saving
+            full_answer = re.sub(r"<think>[\s\S]*?</think>", "", full_answer).strip()
+            full_answer = sanitize_response_text(full_answer)
+
+            # Save session
+            history.append({"role": "user", "content": question})
+            history.append({"role": "assistant", "content": full_answer})
+            save_session(session_id, history)
+
+            dur_ms = int((time.time() - start_time) * 1000)
+            log_interaction(session_id, question, full_answer, GROQ_MODEL, dur_ms, [{"tool": "direct_rag", "chunks": len(kb_results)}])
+
+            yield f"data: {json.dumps({'type': 'done', 'session_id': session_id, 'duration_ms': dur_ms})}\n\n"
 
             # Sanitize full answer before saving
             full_answer = sanitize_response_text(full_answer)
@@ -568,7 +571,7 @@ async def chat_stream_endpoint(request: Request):
             save_session(session_id, history)
 
             dur_ms = int((time.time() - start_time) * 1000)
-            log_interaction(session_id, question, full_answer, GROQ_MODEL, dur_ms, tool_calls_log)
+            log_interaction(session_id, question, full_answer, GROQ_MODEL, dur_ms, [{"tool": "direct_rag", "chunks": len(kb_results)}])
 
             yield f"data: {json.dumps({'type': 'done', 'session_id': session_id, 'duration_ms': dur_ms})}\n\n"
 

@@ -6,6 +6,12 @@ sehingga frontend di GitHub Pages dapat terhubung secara publik dari mana saja.
 
 import os
 import sys
+
+# Fix Windows console encoding for Unicode output
+if sys.platform == "win32":
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
 import time
 import subprocess
 import threading
@@ -13,7 +19,8 @@ import urllib.request
 import re
 
 PORT = 4001
-CLOUDFLARED_EXE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cloudflared.exe")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+CLOUDFLARED_EXE = os.path.join(BASE_DIR, "cloudflared.exe")
 CLOUDFLARED_DOWNLOAD_URL = "https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe"
 
 def check_or_download_cloudflared():
@@ -21,7 +28,6 @@ def check_or_download_cloudflared():
     if os.path.exists(CLOUDFLARED_EXE):
         return CLOUDFLARED_EXE
     
-    # Cek apakah cloudflared ada di PATH sistem
     try:
         res = subprocess.run(["where", "cloudflared"], capture_output=True, text=True)
         if res.returncode == 0 and res.stdout.strip():
@@ -29,24 +35,28 @@ def check_or_download_cloudflared():
     except Exception:
         pass
 
-    print("[1/3] Mengunduh binary resmi Cloudflare Tunnel (cloudflared.exe)...")
+    print("[1/3] Mengunduh binary resmi Cloudflare Tunnel (cloudflared.exe)...", flush=True)
     try:
         urllib.request.urlretrieve(CLOUDFLARED_DOWNLOAD_URL, CLOUDFLARED_EXE)
-        print("      ✓ Selesai mengunduh cloudflared.exe.")
+        print("      [OK] Selesai mengunduh cloudflared.exe.", flush=True)
         return CLOUDFLARED_EXE
     except Exception as e:
-        print(f"      [Peringatan] Gagal mengunduh cloudflared otomatis: {e}")
+        print(f"      [Peringatan] Gagal mengunduh cloudflared otomatis: {e}", flush=True)
         return None
 
 def start_fastapi():
     """Menjalankan server FastAPI backend."""
-    print(f"[2/3] Memulai Backend FastAPI di port {PORT}...")
-    cwd = os.path.dirname(os.path.abspath(__file__))
-    cmd = [sys.executable, "-m", "uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", str(PORT)]
+    print(f"[2/3] Memulai Backend FastAPI di port {PORT}...", flush=True)
+    backend_dir = os.path.join(BASE_DIR, "backend")
+    cmd = [sys.executable, "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", str(PORT)]
+    
+    env = os.environ.copy()
+    env["PYTHONPATH"] = backend_dir + os.pathsep + env.get("PYTHONPATH", "")
     
     proc = subprocess.Popen(
         cmd,
-        cwd=cwd,
+        cwd=backend_dir,
+        env=env,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
         text=True,
@@ -60,13 +70,13 @@ def monitor_fastapi_logs(proc):
     """Menampilkan log FastAPI."""
     for line in iter(proc.stdout.readline, ''):
         if line:
-            # Saring log agar terminal tetap bersih
-            if "INFO:" in line or "ERROR:" in line or "WARNING:" in line:
-                print(f"[FastAPI] {line.strip()}")
+            line_str = line.strip()
+            if "INFO:" in line_str or "ERROR:" in line_str or "WARNING:" in line_str:
+                print(f"[FastAPI] {line_str}", flush=True)
 
 def start_tunnel(binary_path):
     """Menjalankan Cloudflare Tunnel dan mengambil Public HTTPS URL."""
-    print("[3/3] Membuka secure HTTPS tunnel publik...")
+    print("[3/3] Membuka secure HTTPS tunnel publik...", flush=True)
     cmd = [binary_path, "tunnel", "--url", f"http://127.0.0.1:{PORT}"]
     
     proc = subprocess.Popen(
@@ -92,9 +102,9 @@ def start_tunnel(binary_path):
     return proc, public_url
 
 def main():
-    print("\n" + "="*65)
-    print("  ASISTEN VIRTUAL SEASOLDIER — PUBLIC LAUNCHER (GITHUB PAGES + LAPTOP)")
-    print("="*65 + "\n")
+    print("\n" + "="*65, flush=True)
+    print("  ASISTEN VIRTUAL SEASOLDIER - PUBLIC LAUNCHER", flush=True)
+    print("="*65 + "\n", flush=True)
 
     # 1. Siapkan Cloudflare Tunnel
     binary_path = check_or_download_cloudflared()
@@ -111,37 +121,38 @@ def main():
     if binary_path:
         tunnel_proc, public_url = start_tunnel(binary_path)
         if public_url:
-            print("\n" + "="*65)
-            print("  🎉 SERVER & TUNNEL PUBLIK BERHASIL DIAKTIFKAN!")
-            print("="*65)
-            print(f"  📍 Local URL       : http://localhost:{PORT}")
-            print(f"  🌐 Public HTTPS URL: {public_url}")
-            print("  " + "-"*61)
-            print("  PETUNJUK PENGGUNAAN DI GITHUB PAGES:")
-            print("  1. Buka link web GitHub Pages Anda.")
-            print("  2. Klik tombol '⚙️' (Pengaturan Server) di pojok kanan atas.")
-            print(f"  3. Masukkan Public HTTPS URL di atas:")
-            print(f"     👉 {public_url}")
-            print("  4. Klik 'Simpan & Terapkan'.")
-            print("  5. Sistem siap diakses oleh publik di seluruh dunia!")
-            print("="*65 + "\n")
-            print("Tekan Ctrl + C untuk mematikan server & tunnel kapan saja.\n")
+            print("\n" + "="*65, flush=True)
+            print("  *** SERVER & TUNNEL PUBLIK BERHASIL DIAKTIFKAN! ***", flush=True)
+            print("="*65, flush=True)
+            print(f"  Local URL       : http://localhost:{PORT}", flush=True)
+            print(f"  Public HTTPS URL: {public_url}", flush=True)
+            print("  " + "-"*61, flush=True)
+            print("  PETUNJUK PENGGUNAAN DI GITHUB PAGES:", flush=True)
+            print("  1. Buka website GitHub Pages Anda:", flush=True)
+            print("     https://franswaas.github.io/asisten-virtual-seasoldier/", flush=True)
+            print("  2. Klik tombol Pengaturan (ikon gear) di pojok kanan atas.", flush=True)
+            print(f"  3. Masukkan Public HTTPS URL berikut:", flush=True)
+            print(f"     {public_url}", flush=True)
+            print("  4. Klik 'Uji Koneksi' lalu klik 'Simpan & Terapkan'.", flush=True)
+            print("  5. Website sekarang ONLINE dan dapat digunakan siapapun!", flush=True)
+            print("="*65 + "\n", flush=True)
+            print("Tekan Ctrl + C untuk mematikan server & tunnel kapan saja.\n", flush=True)
 
             try:
                 while True:
                     time.sleep(1)
             except KeyboardInterrupt:
-                print("\nMematikan server dan tunnel...")
+                print("\nMematikan server dan tunnel...", flush=True)
                 tunnel_proc.terminate()
                 fastapi_proc.terminate()
-                print("Selesai.")
+                print("Selesai.", flush=True)
                 sys.exit(0)
         else:
-            print("[Peringatan] Tidak dapat mendeteksi URL Cloudflare Tunnel.")
+            print("[Peringatan] Tidak dapat mendeteksi URL Cloudflare Tunnel.", flush=True)
     else:
-        print("\n[Petunjuk Alternatif]")
-        print("Anda dapat menggunakan npx localtunnel sebagai alternatif:")
-        print(f"  npx localtunnel --port {PORT}")
+        print("\n[Petunjuk Alternatif]", flush=True)
+        print("Anda dapat menggunakan npx localtunnel sebagai alternatif:", flush=True)
+        print(f"  npx localtunnel --port {PORT}", flush=True)
         try:
             while True:
                 time.sleep(1)

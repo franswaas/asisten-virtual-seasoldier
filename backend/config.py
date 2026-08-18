@@ -45,7 +45,7 @@ SESSION_MAX_HISTORY = int(os.getenv("SESSION_MAX_HISTORY", "25"))
 # ============================================
 # GROQ MODEL CONFIGURATION
 # ============================================
-GROQ_MODEL = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
+GROQ_MODEL = os.getenv("GROQ_MODEL", "qwen/qwen3.6-27b")
 GROQ_MODEL_FAST = os.getenv("GROQ_MODEL_FAST", "openai/gpt-oss-20b")
 GROQ_TEMPERATURE = float(os.getenv("GROQ_TEMPERATURE", "0.3"))
 GROQ_MAX_TOKENS = int(os.getenv("GROQ_MAX_TOKENS", "1500"))
