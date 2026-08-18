@@ -562,19 +562,6 @@ async def chat_stream_endpoint(request: Request):
 
             yield f"data: {json.dumps({'type': 'done', 'session_id': session_id, 'duration_ms': dur_ms})}\n\n"
 
-            # Sanitize full answer before saving
-            full_answer = sanitize_response_text(full_answer)
-
-            # Save session
-            history.append({"role": "user", "content": question})
-            history.append({"role": "assistant", "content": full_answer})
-            save_session(session_id, history)
-
-            dur_ms = int((time.time() - start_time) * 1000)
-            log_interaction(session_id, question, full_answer, GROQ_MODEL, dur_ms, [{"tool": "direct_rag", "chunks": len(kb_results)}])
-
-            yield f"data: {json.dumps({'type': 'done', 'session_id': session_id, 'duration_ms': dur_ms})}\n\n"
-
         return StreamingResponse(
             event_generator(),
             media_type="text/event-stream",
@@ -583,6 +570,7 @@ async def chat_stream_endpoint(request: Request):
                 "Connection": "keep-alive",
                 "X-Accel-Buffering": "no",
             },
+            background=None
         )
 
     except Exception as e:

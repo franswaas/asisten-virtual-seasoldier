@@ -276,6 +276,7 @@ async function sendMessage(questionText) {
             const data = JSON.parse(line.slice(6));
             
             if (data.type === 'token') {
+              if (statusDiv.innerHTML) statusDiv.innerHTML = '';
               fullAnswer += data.content;
               renderAssistantMarkdown(contentDiv, fullAnswer);
               scrollToBottom();
@@ -287,7 +288,8 @@ async function sendMessage(questionText) {
                 localStorage.setItem('seasoldier_session_id', sessionId);
               }
             } else if (data.type === 'error') {
-              fullAnswer += `\n\n*Error: ${data.message}*`;
+              statusDiv.innerHTML = '';
+              fullAnswer += `\n\n*${data.message || 'Terjadi kendala saat memproses jawaban.'}*`;
               renderAssistantMarkdown(contentDiv, fullAnswer);
             }
           } catch (jsonErr) {
@@ -299,6 +301,10 @@ async function sendMessage(questionText) {
 
     contentDiv.classList.remove('streaming-cursor');
     statusDiv.innerHTML = '';
+    
+    if (!fullAnswer.trim()) {
+      fullAnswer = '⚠️ *Maaf, server sedang memproses antrean pertanyaan. Silakan kirim ulang pesan Anda atau coba beberapa saat lagi.*';
+    }
     renderAssistantMarkdown(contentDiv, fullAnswer);
 
     // Save to export log
