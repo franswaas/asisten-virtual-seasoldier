@@ -707,8 +707,18 @@ function scrollToBottom() {
 }
 
 // ============================================
-// UTILS
+// UTILS & MOBILE KEYBOARD RESIZE
 // ============================================
+if (window.visualViewport) {
+  window.visualViewport.addEventListener('resize', () => {
+    const appLayout = document.querySelector('.app-layout');
+    if (appLayout) {
+      appLayout.style.height = `${window.visualViewport.height}px`;
+    }
+    setTimeout(scrollToBottom, 60);
+  });
+}
+
 function escapeHtml(string) {
   const entityMap = {
     '&': '&amp;',
