@@ -1,124 +1,78 @@
-# Panduan Setup & Akses Asisten Virtual Seasoldier
+# Panduan Setup & Akses Publik Asisten Virtual Seasoldier
 
-Dokumen ini menjelaskan langkah-langkah menjalankan backend di laptop Anda secara lokal, melakukan hosting frontend di **GitHub Pages**, dan menghubungkan keduanya sehingga web dapat diakses oleh publik secara sementara.
-
----
-
-## Arsitektur & Cara Kerja
-
-```
-[Pengunjung / Web Browser]
-       │
-       ▼
-[Frontend: GitHub Pages (https://<username>.github.io/<repo>/)]
-       │
-       ▼ (Permintaan REST / Streaming SSE)
-[Tunnel Publik: Cloudflare Tunnel / LocalTunnel / Ngrok]
-       │
-       ▼
-[Backend di Laptop: FastAPI Port 4001]
-       │
-       ├──► [Groq AI LLM (Llama 3.3 70B)]
-       └──► [Knowledge Base Seasoldier (BM25/TF-IDF RAG)]
-```
+Dokumen ini menjelaskan langkah-langkah menjalankan backend di laptop secara lokal, melakukan deployment frontend ke **GitHub Pages**, dan menghubungkan keduanya via **Cloudflare HTTPS Tunnel** sehingga sistem dapat diakses secara publik oleh siapapun di internet.
 
 ---
 
-## 1. Menjalankan Backend di Laptop
+## 🏛️ Arsitektur Sistem
 
-### A. Prasyarat
-- **Python 3.10+** terpasang di laptop.
-- Koneksi internet (untuk akses API Groq).
-
-### B. Langkah Instalasi Dependensi
-Buka Terminal / PowerShell di folder proyek:
-
-```powershell
-cd "e:\AI Agent\Asisten Virtual Seasoldier\backend"
-
-# Buat virtual environment (opsional namun disarankan)
-python -m venv venv
-.\venv\Scripts\activate
-
-# Install dependensi
-pip install -r requirements.txt
 ```
-
-### C. Menjalankan Server Backend
-```powershell
-# Jalankan server
-python main.py
+[Pengguna Publik / HP / Laptop]
+       │
+       ▼ (HTTPS)
+[Frontend Statis: GitHub Pages]
+https://franswaas.github.io/asisten-virtual-seasoldier/
+       │
+       ▼ (Permintaan Streaming SSE / REST)
+[Cloudflare Secure HTTPS Tunnel]
+https://alpine-trip-keith-hawk.trycloudflare.com (atau subdomain dinamis baru)
+       │
+       ▼ (Local Port 4001)
+[Backend Laptop: FastAPI + Python 3.10+]
+       │
+       ├──► [Groq AI LLM (openai/gpt-oss-120b)]
+       └──► [Knowledge Base Seasoldier (BM25/TF-IDF Compact Smart RAG)]
 ```
-Server akan aktif di: **`http://localhost:4001`**
-Anda dapat menguji di browser dengan membuka: `http://localhost:4001` (akan langsung membuka frontend antarmuka).
 
 ---
 
-## 2. Menjalankan Backend & Tunnel Otomatis (1-Click)
+## 1. Menjalankan Backend & Tunnel Publik (1-Klik)
 
-Kami telah menyediakan skrip otomatis yang menjalankan FastAPI sekaligus membuat **Cloudflare Tunnel (HTTPS)** secara instan:
+Kami telah menyediakan script otomatisasi untuk memulai server FastAPI dan membuka tunnel publik sekaligus:
 
-### Cara 1: Menggunakan Script Python (Otomatis & Mudah)
-Cukup jalankan perintah berikut di root folder proyek:
+### Opsi A: Menggunakan Script Python (Otomatis & Terintegrasi)
+Jalankan perintah berikut di root folder proyek:
 ```powershell
 python run_public_tunnel.py
 ```
-*Skrip ini akan otomatis mengunduh binary resmi Cloudflare jika belum ada, memulai FastAPI, dan langsung menampilkan URL HTTPS publik di terminal.*
+*Skrip ini akan memeriksa binary Cloudflare, memulai server FastAPI di port 4001, dan langsung menampilkan **Public HTTPS URL** di layar terminal.*
 
-### Cara 2: Double Click File Batch di Windows
-Anda juga dapat langsung membuka Windows Explorer dan melakukan **Double Click** pada file:
+### Opsi B: Menggunakan File Batch Windows
+Buka Windows Explorer dan **Double Click** pada file:
 👉 **`start_public_server.bat`**
 
 ---
 
-## 3. Cara Deploy Frontend ke GitHub Pages
+## 2. Menghubungkan Backend ke GitHub Pages
 
-1. **Buat Repository di GitHub**:
-   - Buka [github.com/new](https://github.com/new).
-   - Buat repository baru, misalnya: `asisten-virtual-seasoldier`.
-   - Pilih opsi **Public**.
-
-2. **Push Kode ke GitHub**:
-   Jalankan perintah berikut di terminal:
-   ```bash
-   git init
-   git add .
-   git commit -m "feat: initial commit Asisten Virtual Seasoldier"
-   git branch -M main
-   git remote add origin https://github.com/<username-anda>/<nama-repo>.git
-   git push -u origin main
-   ```
-
-3. **Aktifkan GitHub Pages**:
-   - Masuk ke tab **Settings** -> **Pages** pada repository GitHub Anda.
-   - Pada bagian **Build and deployment**:
-     - Opsi A (Otomatis): Pilih **Source: GitHub Actions** (workflow `.github/workflows/deploy-pages.yml` akan otomatis aktif).
-     - Opsi B (Manual): Pilih **Source: Deploy from a branch**, Branch: `main` / `/(root)`.
-   - Simpan. Dalam 1-2 menit, link website publik Anda akan aktif di:
-     `https://<username-anda>.github.io/<nama-repo>/`
-
----
-
-## 4. Menghubungkan Frontend GitHub Pages dengan Laptop Anda
-
-1. Buka website Anda di browser (misal: `https://<username-anda>.github.io/<nama-repo>/`).
-2. Klik tombol ikon **⚙️ (Pengaturan Server)** di pojok kanan atas header.
-3. Masukkan **Public HTTPS URL** yang muncul saat Anda menjalankan `python run_public_tunnel.py` (contoh: `https://contoh-subdomain.trycloudflare.com`).
+1. Buka website resmi: **[https://franswaas.github.io/asisten-virtual-seasoldier/](https://franswaas.github.io/asisten-virtual-seasoldier/)**
+2. Klik tombol ikon **⚙️ (Pengaturan Server)** di pojok kanan atas.
+3. Masukkan **Public HTTPS URL** yang tampil di terminal Anda (contoh: `https://alpine-trip-keith-hawk.trycloudflare.com`).
 4. Klik **Uji Koneksi** lalu klik **Simpan & Terapkan**.
-5. Selesai! Status koneksi akan berubah menjadi **Online (Hijau)** dan website siap digunakan oleh siapapun di internet.
+5. Selesai! Indikator status akan berubah menjadi **Online (Hijau)** dan asisten siap digunakan.
 
 ---
 
-## 5. Fitur Utama Antarmuka
+## 3. Fitur Utama & Keunggulan Sistem
 
-- **Desain Monokrom / Hitam-Putih**: Sesuai estetika minimalis modern bernuansa pejuang lingkungan (*eco-warrior*).
-- **Streaming SSE (Server-Sent Events)**: Jawaban asisten muncul kata demi kata secara instan.
-- **Voice Recognition (STT)**: Tekan ikon mikrofon untuk berbicara dalam Bahasa Indonesia.
-- **Text-to-Speech (TTS)**: Aktifkan ikon speaker di header untuk mendengarkan suara asisten membaca jawaban.
-- **Quick Action Chips**: Akses instan ke topik-topik populer (Mangrove, Terumbu Karang, Bersih Pantai, Relawan, CSR, Gelang Komitmen, Chapter Regional).
-- **Export Riwayat Chat**: Unduh catatan sesi percakapan dalam format file `.txt`.
+- **Tampilan Pure Noir Minimalist (Hitam-Putih)**: Desain modern, elegan, dan kontras tinggi sesuai nilai pejuang lingkungan.
+- **Respon Cepat Tanpa Pembatasan Token (<1.2s)**: Menggunakan prompt berdensitas tinggi dan pemangkasan riwayat percakapan sehingga kebal terhadap *rate limit* untuk pertanyaan beruntun.
+- **Animasi Pengetikan Halus (*Typewriter Streamer Queue*)**: Teks mengalir teratur dan nyaman dibaca tanpa kedipan atau teks bertumpuk di HP maupun laptop.
+- **Desain Khusus Mobile (100dvh + Safe Area Inset)**: Kolom pengetikan pesan tidak akan terpotong oleh tombol navigasi sistem Android/iOS.
+- **Interaksi Suara (STT & TTS)**: Mendukung input suara mikrofon dan pembacaan teks otomatis dalam Bahasa Indonesia.
+- **Privasi & Keamanan Data (Zero Leak)**: API key tersimpan aman di `.env` lokal dan tidak pernah terunggah ke GitHub.
+
+---
+
+## 4. Troubleshooting & Solusi Kendala
+
+| Kendala | Penyebab | Solusi |
+|---|---|---|
+| **Status Offline / Gagal Konek** | Terminal laptop tertutup atau URL tunnel berganti | Jalankan `python run_public_tunnel.py` dan perbarui URL di menu Pengaturan (⚙️). |
+| **Pertanyaan Beruntun Lambat** | Kuota token berlebih pada riwayat lama | Sistem telah menerapkan pemangkasan riwayat otomatis (*pruned history*). |
+| **Layar HP Terpotong** | Browser mobile belum refresh cache | Lakukan *hard reload* pada browser HP atau buka di tab incognito. |
 
 ---
 
 ## 🌿 Slogan Gerakan
-*"Bukan Sekadar Bicara, Tapi Aksi Nyata"* — Seasoldier Indonesia
+> *"Bukan Sekadar Bicara, Tapi Aksi Nyata"* — **Seasoldier Indonesia**
