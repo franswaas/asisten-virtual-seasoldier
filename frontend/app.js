@@ -259,8 +259,53 @@ async function sendMessage(questionText) {
     const reader = response.body.getReader();
     const decoder = new TextDecoder('utf-8');
     let buffer = '';
+    let incomingText = '';
+    let renderedLength = 0;
+    let isStreamFinished = false;
+    let typingTimer = null;
 
     contentDiv.classList.add('streaming-cursor');
+
+    // Smooth typewriter tick function
+    function updateTypingAnimation() {
+      if (renderedLength < incomingText.length) {
+        const backlog = incomingText.length - renderedLength;
+        const step = backlog > 120 ? 8 : backlog > 60 ? 4 : backlog > 20 ? 2 : 1;
+        renderedLength = Math.min(renderedLength + step, incomingText.length);
+        const currentSlice = incomingText.slice(0, renderedLength);
+        renderAssistantMarkdown(contentDiv, currentSlice);
+        smoothScrollIfNeeded();
+      }
+
+      if (renderedLength < incomingText.length || !isStreamFinished) {
+        typingTimer = setTimeout(updateTypingAnimation, 18);
+      } else {
+        // Finished typing all incoming text
+        contentDiv.classList.remove('streaming-cursor');
+        statusDiv.innerHTML = '';
+        
+        if (!incomingText.trim()) {
+          incomingText = '⚠️ *Maaf, server sedang memproses antrean pertanyaan. Silakan kirim ulang pesan Anda.*';
+        }
+        renderAssistantMarkdown(contentDiv, incomingText);
+        smoothScrollIfNeeded();
+
+        // Save to export log
+        chatLog.push({ role: 'User', content: questionText });
+        chatLog.push({ role: 'Asisten Virtual Seasoldier', content: incomingText });
+
+        // Append Chatwoot-style action toolbar
+        appendMessageToolbar(bubble, assistantMessageId, incomingText);
+
+        // Text to speech if enabled
+        if (autoSpeak && incomingText) {
+          speakText(cleanMarkdownForSpeech(incomingText));
+        }
+      }
+    }
+
+    // Start typewriter loop
+    typingTimer = setTimeout(updateTypingAnimation, 20);
 
     while (true) {
       const { value, done } = await reader.read();
@@ -277,9 +322,7 @@ async function sendMessage(questionText) {
             
             if (data.type === 'token') {
               if (statusDiv.innerHTML) statusDiv.innerHTML = '';
-              fullAnswer += data.content;
-              renderAssistantMarkdown(contentDiv, fullAnswer);
-              scrollToBottom();
+              incomingText += data.content;
             } else if (data.type === 'tool_start') {
               statusDiv.innerHTML = `<span class="tool-status-pill">🔍 Mengakses basis data Seasoldier...</span>`;
             } else if (data.type === 'done') {
@@ -289,8 +332,7 @@ async function sendMessage(questionText) {
               }
             } else if (data.type === 'error') {
               statusDiv.innerHTML = '';
-              fullAnswer += `\n\n*${data.message || 'Terjadi kendala saat memproses jawaban.'}*`;
-              renderAssistantMarkdown(contentDiv, fullAnswer);
+              incomingText += `\n\n*${data.message || 'Terjadi kendala saat memproses jawaban.'}*`;
             }
           } catch (jsonErr) {
             // Ignore partial SSE lines
@@ -299,25 +341,7 @@ async function sendMessage(questionText) {
       }
     }
 
-    contentDiv.classList.remove('streaming-cursor');
-    statusDiv.innerHTML = '';
-    
-    if (!fullAnswer.trim()) {
-      fullAnswer = '⚠️ *Maaf, server sedang memproses antrean pertanyaan. Silakan kirim ulang pesan Anda atau coba beberapa saat lagi.*';
-    }
-    renderAssistantMarkdown(contentDiv, fullAnswer);
-
-    // Save to export log
-    chatLog.push({ role: 'User', content: questionText });
-    chatLog.push({ role: 'Asisten Virtual Seasoldier', content: fullAnswer });
-
-    // Append Chatwoot-style action toolbar
-    appendMessageToolbar(bubble, assistantMessageId, fullAnswer);
-
-    // Text to speech if enabled
-    if (autoSpeak && fullAnswer) {
-      speakText(cleanMarkdownForSpeech(fullAnswer));
-    }
+    isStreamFinished = true;
 
   } catch (err) {
     console.error('Chat error:', err);
@@ -331,7 +355,15 @@ async function sendMessage(questionText) {
   } finally {
     isLoading = false;
     sendBtn.disabled = false;
-    scrollToBottom();
+    smoothScrollIfNeeded();
+  }
+}
+
+function smoothScrollIfNeeded() {
+  const threshold = 150;
+  const isNearBottom = chatViewport.scrollHeight - chatViewport.scrollTop - chatViewport.clientHeight < threshold;
+  if (isNearBottom) {
+    chatViewport.scrollTop = chatViewport.scrollHeight;
   }
 }
 

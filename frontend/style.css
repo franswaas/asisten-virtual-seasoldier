@@ -609,6 +609,121 @@ html, body {
   border-color: #ffffff;
 }
 
+/* Assistant Markdown Typography & Layout */
+.assistant-markdown-content {
+  font-size: 0.92rem;
+  line-height: 1.7;
+  color: var(--text-primary);
+  word-break: break-word;
+  transition: opacity 0.15s ease;
+}
+
+.assistant-markdown-content p {
+  margin: 0 0 0.85em 0;
+}
+
+.assistant-markdown-content p:last-child {
+  margin-bottom: 0;
+}
+
+.assistant-markdown-content h1,
+.assistant-markdown-content h2,
+.assistant-markdown-content h3,
+.assistant-markdown-content h4 {
+  font-family: var(--font-display);
+  color: #ffffff;
+  font-weight: 700;
+  margin: 1.1em 0 0.45em;
+  line-height: 1.35;
+}
+
+.assistant-markdown-content h2 { font-size: 1.12rem; }
+.assistant-markdown-content h3 { font-size: 1.02rem; }
+.assistant-markdown-content h4 { font-size: 0.95rem; }
+
+.assistant-markdown-content ul,
+.assistant-markdown-content ol {
+  margin: 0.6em 0 0.9em 1.25rem;
+  padding: 0;
+}
+
+.assistant-markdown-content li {
+  margin-bottom: 0.45em;
+  line-height: 1.62;
+}
+
+.assistant-markdown-content hr {
+  border: none;
+  border-top: 1px solid var(--border-subtle);
+  margin: 14px 0;
+}
+
+.assistant-markdown-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 0.84rem;
+}
+
+.assistant-markdown-content th,
+.assistant-markdown-content td {
+  border: 1px solid var(--border-medium);
+  padding: 7px 10px;
+  text-align: left;
+}
+
+.assistant-markdown-content th {
+  background: var(--bg-surface-elevated);
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.assistant-markdown-content strong {
+  color: #ffffff;
+  font-weight: 600;
+}
+
+.assistant-markdown-content em {
+  color: var(--text-secondary);
+}
+
+.assistant-markdown-content blockquote {
+  border-left: 3px solid #ffffff;
+  margin: 0.8em 0;
+  padding: 4px 0 4px 12px;
+  color: var(--text-secondary);
+  background: var(--bg-surface-elevated);
+  border-radius: var(--radius-xs);
+}
+
+.assistant-markdown-content code {
+  font-family: var(--font-mono);
+  font-size: 0.84em;
+  background: var(--bg-surface-elevated);
+  border: 1px solid var(--border-medium);
+  padding: 2px 5px;
+  border-radius: var(--radius-xs);
+  color: #ffffff;
+}
+
+/* Streaming Cursor Effect (Monochrome Pulse) */
+.streaming-cursor::after {
+  content: '▍';
+  display: inline-block;
+  color: #ffffff;
+  margin-left: 3px;
+  font-size: 0.95em;
+  line-height: 1;
+  animation: cursor-pulse 0.75s infinite cubic-bezier(0.4, 0, 0.6, 1);
+  vertical-align: baseline;
+  font-weight: 700;
+}
+
+@keyframes cursor-pulse {
+  0%, 100% { opacity: 0.15; transform: scaleY(0.85); }
+  50% { opacity: 1; transform: scaleY(1.05); }
+}
+
 /* Tool execution status pill */
 .tool-status-pill {
   display: inline-flex;
