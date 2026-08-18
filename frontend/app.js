@@ -266,11 +266,11 @@ async function sendMessage(questionText) {
 
     contentDiv.classList.add('streaming-cursor');
 
-    // Smooth typewriter tick function
+    // Smooth typewriter tick function (optimized for mobile & desktop)
     function updateTypingAnimation() {
       if (renderedLength < incomingText.length) {
         const backlog = incomingText.length - renderedLength;
-        const step = backlog > 120 ? 8 : backlog > 60 ? 4 : backlog > 20 ? 2 : 1;
+        const step = backlog > 150 ? 8 : backlog > 60 ? 4 : backlog > 20 ? 2 : 1;
         renderedLength = Math.min(renderedLength + step, incomingText.length);
         const currentSlice = incomingText.slice(0, renderedLength);
         renderAssistantMarkdown(contentDiv, currentSlice);
@@ -278,7 +278,7 @@ async function sendMessage(questionText) {
       }
 
       if (renderedLength < incomingText.length || !isStreamFinished) {
-        typingTimer = setTimeout(updateTypingAnimation, 18);
+        typingTimer = setTimeout(updateTypingAnimation, 28);
       } else {
         // Finished typing all incoming text
         contentDiv.classList.remove('streaming-cursor');
@@ -305,7 +305,7 @@ async function sendMessage(questionText) {
     }
 
     // Start typewriter loop
-    typingTimer = setTimeout(updateTypingAnimation, 20);
+    typingTimer = setTimeout(updateTypingAnimation, 30);
 
     while (true) {
       const { value, done } = await reader.read();
@@ -359,8 +359,28 @@ async function sendMessage(questionText) {
   }
 }
 
+let isUserInteracting = false;
+let userScrollTimeout = null;
+
+function initScrollListeners() {
+  if (typeof chatViewport !== 'undefined' && chatViewport) {
+    chatViewport.addEventListener('touchstart', () => { isUserInteracting = true; }, { passive: true });
+    chatViewport.addEventListener('touchend', () => {
+      clearTimeout(userScrollTimeout);
+      userScrollTimeout = setTimeout(() => { isUserInteracting = false; }, 1000);
+    }, { passive: true });
+    chatViewport.addEventListener('wheel', () => {
+      isUserInteracting = true;
+      clearTimeout(userScrollTimeout);
+      userScrollTimeout = setTimeout(() => { isUserInteracting = false; }, 1000);
+    }, { passive: true });
+  }
+}
+initScrollListeners();
+
 function smoothScrollIfNeeded() {
-  const threshold = 150;
+  if (isUserInteracting) return;
+  const threshold = 160;
   const isNearBottom = chatViewport.scrollHeight - chatViewport.scrollTop - chatViewport.clientHeight < threshold;
   if (isNearBottom) {
     chatViewport.scrollTop = chatViewport.scrollHeight;

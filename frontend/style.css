@@ -1546,4 +1546,41 @@ html, body {
   .reply-box-dock {
     padding: 6px 10px 12px;
   }
+
+  .assistant-markdown-content {
+    font-size: 0.88rem;
+    line-height: 1.62;
+  }
+  
+  .assistant-markdown-content ul,
+  .assistant-markdown-content ol {
+    margin: 0.4em 0 0.6em 1rem;
+  }
+  
+  .assistant-markdown-content li {
+    margin-bottom: 0.35em;
+  }
+  
+  .assistant-markdown-content p {
+    margin-bottom: 0.65em;
+  }
+  
+  .assistant-markdown-content table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Mobile & Touch hardware acceleration */
+.chat-viewport {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+}
+
+.assistant-bubble, .assistant-markdown-content {
+  contain: layout style;
+  transform: translateZ(0);
+  -webkit-font-smoothing: antialiased;
 }

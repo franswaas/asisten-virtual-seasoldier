@@ -402,19 +402,26 @@ async def chat_endpoint(request: Request):
             log_interaction(session_id, question, simple_reply, GROQ_MODEL, dur, [])
             return {"answer": simple_reply, "session_id": session_id, "model": GROQ_MODEL}
 
-        # Step 1: Direct Smart RAG Retrieval
-        kb_results = get_engine().search(question, top_k=3)
+        # Step 1: Direct Smart RAG Retrieval (compact top 2 chunks)
+        kb_results = get_engine().search(question, top_k=2)
         if kb_results:
-            context_text = "\n\n---\n\n".join([r.chunk for r in kb_results])
-            context_block = f"\n\n==================================================\nINFORMASI TERVERIFIKASI DARI BASIS DATA RESMI SEASOLDIER:\n{context_text}\n=================================================="
+            context_text = "\n\n---\n\n".join([r.chunk[:500] for r in kb_results])
+            context_block = f"\n\n==================================================\nINFORMASI RESMI SEASOLDIER:\n{context_text}\n=================================================="
             effective_system_prompt = SYSTEM_PROMPT + context_block
         else:
             effective_system_prompt = SYSTEM_PROMPT
 
-        # Build messages with history
+        # Build messages with pruned history (max 1 prior turn)
         history = load_session(session_id)
+        pruned_history = []
+        for h in history[-2:]:
+            if h.get("role") == "assistant":
+                pruned_history.append({"role": "assistant", "content": h.get("content", "")[:250] + "..."})
+            else:
+                pruned_history.append(h)
+
         messages = [{"role": "system", "content": effective_system_prompt}]
-        messages.extend(history)
+        messages.extend(pruned_history)
         messages.append({"role": "user", "content": question})
 
         # Generate response
@@ -484,18 +491,25 @@ async def chat_stream_endpoint(request: Request):
             # Notify frontend of knowledge base retrieval
             yield f"data: {json.dumps({'type': 'tool_start', 'tools': ['search_knowledge_base']})}\n\n"
 
-            # Direct Smart RAG search
-            kb_results = get_engine().search(question, top_k=3)
+            # Direct Smart RAG search (compact top 2 chunks)
+            kb_results = get_engine().search(question, top_k=2)
             if kb_results:
-                context_text = "\n\n---\n\n".join([r.chunk for r in kb_results])
-                context_block = f"\n\n==================================================\nINFORMASI TERVERIFIKASI DARI BASIS DATA RESMI SEASOLDIER:\n{context_text}\n=================================================="
+                context_text = "\n\n---\n\n".join([r.chunk[:500] for r in kb_results])
+                context_block = f"\n\n==================================================\nINFORMASI RESMI SEASOLDIER:\n{context_text}\n=================================================="
                 effective_system_prompt = SYSTEM_PROMPT + context_block
             else:
                 effective_system_prompt = SYSTEM_PROMPT
 
             history = load_session(session_id)
+            pruned_history = []
+            for h in history[-2:]:
+                if h.get("role") == "assistant":
+                    pruned_history.append({"role": "assistant", "content": h.get("content", "")[:250] + "..."})
+                else:
+                    pruned_history.append(h)
+
             messages = [{"role": "system", "content": effective_system_prompt}]
-            messages.extend(history)
+            messages.extend(pruned_history)
             messages.append({"role": "user", "content": question})
 
             # Stream from Groq
