@@ -1,0 +1,42 @@
+# Environment variables (DO NOT COMMIT API KEYS)
+.env
+.env.local
+.env.*.local
+backend/.env
+
+# Python bytecode & cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Virtual Environments
+venv/
+env/
+ENV/
+.venv/
+
+# Session storage & runtime logs
+backend/sessions/
+backend/logs/
+*.log
+
+# Cloudflare / Tunnel binaries
+cloudflared.exe
+cloudflared
+
+# IDE & Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Gemini & Agent configs
+.gemini/
+.system_generated/
+scratch/

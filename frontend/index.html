@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="id" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#070e14">
+  <meta name="color-scheme" content="dark">
+  <title>Asisten Virtual Seasoldier — Official Assistant</title>
+  <meta name="description" content="Asisten Virtual resmi Seasoldier Indonesia. Informasi program konservasi mangrove, aksi bersih pantai, edukasi lingkungan, CSR perusahaan, merchandise gelang komitmen, dan cara bergabung relawan.">
+  <meta name="keywords" content="Seasoldier, Nadine Chandrawinata, Konservasi Mangrove, Bersih Pantai, Relawan Lingkungan, Gelang Seasoldier, CSR, Asisten Virtual">
+  <meta name="author" content="Seasoldier Indonesia">
+  
+  <!-- Open Graph -->
+  <meta property="og:title" content="Asisten Virtual Seasoldier Indonesia">
+  <meta property="og:description" content="Tanya informasi aksi konservasi, penanaman mangrove, gelang komitmen, dan pendaftaran relawan Seasoldier.">
+  <meta property="og:type" content="website">
+
+  <!-- Google Fonts: Inter & Space Grotesk -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="app-layout">
+    <!-- CHATWOOT-STYLE HEADER -->
+    <header class="app-header">
+      <div class="header-left">
+        <!-- Avatar with Live Indicator -->
+        <div class="header-avatar-wrap">
+          <div class="header-avatar">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M2 12h20M2 12a10 10 0 0 1 18-6M2 12a10 10 0 0 0 18 6"/>
+              <path d="M12 2v20M12 2a10 10 0 0 1 6 18M12 2a10 10 0 0 0-6 18"/>
+            </svg>
+          </div>
+          <span class="avatar-online-dot"></span>
+        </div>
+
+        <div class="header-info">
+          <div class="header-title-row">
+            <h1 class="header-name">Seasoldier Assistant</h1>
+            <span class="verified-badge" title="Resmi Seasoldier">
+              <svg viewBox="0 0 24 24" fill="currentColor">
+                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+              </svg>
+            </span>
+          </div>
+          <div class="header-status-line">
+            <span class="channel-tag">OFFICIAL</span>
+            <span class="status-subtext" id="headerSubtext">Aktif • Siap menjawab aksi &amp; konservasi</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <!-- Voice Readout Toggle -->
+        <button class="header-btn" id="voiceToggle" onclick="toggleAutoSpeak()" title="Voice Readout (TTS)" aria-label="Auto Speak">
+          <svg class="icon-svg" id="voiceIconOff" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M11 5L6 9H2v6h4l5 4V5z"/>
+            <line x1="23" y1="9" x2="17" y2="15"/>
+            <line x1="17" y1="9" x2="23" y2="15"/>
+          </svg>
+          <svg class="icon-svg hidden" id="voiceIconOn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+            <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+          </svg>
+        </button>
+
+        <!-- Export Chat -->
+        <button class="header-btn" onclick="exportChat()" title="Download Riwayat Chat (.txt)" aria-label="Export">
+          <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+        </button>
+
+        <!-- Clear Chat -->
+        <button class="header-btn" onclick="clearChat()" title="Bersihkan Percakapan" aria-label="Clear">
+          <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          </svg>
+        </button>
+
+        <!-- Backend Settings Modal Button -->
+        <button class="header-btn" onclick="openSettingsModal()" title="Pengaturan Server Backend" aria-label="Settings">
+          <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+        </button>
+
+        <!-- Status Badge -->
+        <div class="connection-status status-checking" id="connectionStatus" onclick="openSettingsModal()" title="Status Backend">
+          <span class="status-pulse"></span>
+          <span class="status-text" id="statusText">Connecting</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- HORIZONTAL QUICK CANNED PROMPTS (Chatwoot Macro Bar) -->
+    <div class="macros-bar">
+      <div class="macros-scroll-track" id="macrosTrack">
+        <button class="macro-chip" onclick="sendQuickQuestion('Bagaimana profil, sejarah, dan filosofi Seasoldier?')">
+          <span class="macro-icon">🌊</span>
+          <span>Profil &amp; Filosofi</span>
+        </button>
+        <button class="macro-chip" onclick="sendQuickQuestion('Apa saja program konservasi mangrove dan terumbu karang Seasoldier?')">
+          <span class="macro-icon">🌱</span>
+          <span>Konservasi Mangrove</span>
+        </button>
+        <button class="macro-chip" onclick="sendQuickQuestion('Jelaskan aksi bersih sampah #BersihkanWarisanKita dan Bersihkan Warungku!')">
+          <span class="macro-icon">🏖️</span>
+          <span>Aksi Bersih Pantai</span>
+        </button>
+        <button class="macro-chip" onclick="sendQuickQuestion('Bagaimana cara bergabung menjadi relawan (Soldier) Seasoldier?')">
+          <span class="macro-icon">👥</span>
+          <span>Gabung Relawan</span>
+        </button>
+        <button class="macro-chip" onclick="sendQuickQuestion('Apa makna dan cara membeli Gelang Komitmen Seasoldier?')">
+          <span class="macro-icon">🎗️</span>
+          <span>Gelang Komitmen</span>
+        </button>
+        <button class="macro-chip" onclick="sendQuickQuestion('Bagaimana perusahaan bisa bekerjasama CSR dengan Seasoldier?')">
+          <span class="macro-icon">🤝</span>
+          <span>Kemitraan CSR</span>
+        </button>
+        <button class="macro-chip" onclick="sendQuickQuestion('Apa itu program edukasi Seasoldier Junior dan Pondok Pemuda?')">
+          <span class="macro-icon">🎓</span>
+          <span>Edukasi Lingkungan</span>
+        </button>
+        <button class="macro-chip" onclick="sendQuickQuestion('Sebutkan daftar 21 Chapter Regional Seasoldier di Indonesia!')">
+          <span class="macro-icon">📍</span>
+          <span>21 Chapter Daerah</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- CHAT MESSAGES VIEWPORT -->
+    <main class="chat-viewport" id="chatViewport">
+      <div class="chat-messages" id="chatMessages">
+        
+        <!-- Conversation Date Separator -->
+        <div class="date-separator">
+          <span class="date-separator-pill">Hari Ini</span>
+        </div>
+
+        <!-- Chatwoot-Style Assistant Welcome Card -->
+        <div class="message-item assistant-message-item welcome-message-item">
+          <div class="message-meta-header">
+            <div class="sender-info">
+              <span class="sender-name">Asisten Seasoldier</span>
+              <span class="role-badge">Official Assistant</span>
+            </div>
+            <span class="message-time" id="welcomeTime">12:00</span>
+          </div>
+
+          <div class="bubble-container assistant-bubble-container">
+            <div class="message-bubble assistant-bubble welcome-card-bubble">
+              <div class="welcome-card-header">
+                <div class="welcome-tag">SEASOLDIER INDONESIA</div>
+                <h2>Aksi Nyata untuk Kelestarian Darat &amp; Laut</h2>
+                <p class="welcome-desc">
+                  Didirikan oleh <strong>Nadine Chandrawinata</strong> &amp; <strong>Dinni Septianingrum</strong> (28 Maret 2015). Menjaga lingkungan dari daratan karena 80% sampah laut berasal dari darat.
+                </p>
+              </div>
+
+              <!-- Impact Stats Grid -->
+              <div class="impact-metrics-grid">
+                <div class="metric-card">
+                  <div class="metric-val">43</div>
+                  <div class="metric-lbl">Titik Konservasi</div>
+                </div>
+                <div class="metric-card">
+                  <div class="metric-val">21.5k+</div>
+                  <div class="metric-lbl">Relawan Soldiers</div>
+                </div>
+                <div class="metric-card">
+                  <div class="metric-val">21+</div>
+                  <div class="metric-lbl">Chapter Daerah</div>
+                </div>
+                <div class="metric-card">
+                  <div class="metric-val">133+</div>
+                  <div class="metric-lbl">Mitra Lembaga</div>
+                </div>
+              </div>
+
+              <!-- Knowledge Base Dynamic Validation Notice -->
+              <div class="kb-validation-notice">
+                <div class="kb-notice-header">
+                  <div class="kb-notice-badge">
+                    <span class="kb-badge-dot"></span>
+                    <span>Basis Data Tervalidasi</span>
+                  </div>
+                </div>
+                <p class="kb-notice-text">
+                  Informasi disajikan berdasarkan basis data resmi Seasoldier yang divalidasi dan diperbarui berkala. Jika Anda menemukan pembaruan data atau informasi terkini, Anda dapat memberikan masukan via tombol rating atau email ke <strong>info@seasoldier.org</strong>.
+                </p>
+              </div>
+
+              <div class="card-prompt-hint">
+                <span>💡 Ketik pertanyaan Anda di bawah atau tap tombol topik cepat di atas.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </main>
+
+    <!-- FLOATING SCROLL BUTTON -->
+    <button class="scroll-fab" id="scrollFab" onclick="scrollToBottom()" title="Scroll ke bawah" aria-label="Scroll to bottom">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <line x1="12" y1="5" x2="12" y2="19"></line>
+        <polyline points="19 12 12 19 5 12"></polyline>
+      </svg>
+    </button>
+
+    <!-- CHATWOOT-STYLE FLOATING REPLY BOX -->
+    <footer class="reply-box-dock">
+      <div class="reply-box-wrapper">
+        <form class="reply-form" id="chatForm" onsubmit="handleFormSubmit(event)">
+          <div class="reply-input-shell" id="replyInputShell">
+            
+            <!-- Voice Recording Wave Overlay -->
+            <div class="voice-wave-overlay hidden" id="voiceWaveOverlay">
+              <div class="wave-indicator">
+                <span class="wave-bar"></span>
+                <span class="wave-bar"></span>
+                <span class="wave-bar"></span>
+                <span class="wave-bar"></span>
+                <span class="wave-bar"></span>
+              </div>
+              <span class="wave-text">Mendengarkan suara Anda...</span>
+              <button type="button" class="cancel-record-btn" onclick="toggleVoiceInput()">Batal</button>
+            </div>
+
+            <textarea 
+              id="chatInput" 
+              class="reply-textarea" 
+              placeholder="Tulis pesan ke Asisten Seasoldier..." 
+              rows="1"
+              maxlength="800"
+              onkeydown="handleTextareaKeydown(event)"
+              oninput="autoResizeTextarea(this)"
+            ></textarea>
+
+            <div class="reply-actions-row">
+              <!-- Mic Record Button -->
+              <button type="button" class="dock-action-btn mic-btn" id="micBtn" onclick="toggleVoiceInput()" title="Input Suara (Speech-to-Text)" aria-label="Voice input">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+                  <path d="M19 10v2a7 7 0 0 1-14 0v-2"/>
+                  <line x1="12" y1="19" x2="12" y2="23"/>
+                  <line x1="8" y1="23" x2="16" y2="23"/>
+                </svg>
+              </button>
+
+              <!-- Send Button -->
+              <button type="submit" class="dock-action-btn send-btn" id="sendBtn" title="Kirim Pesan" aria-label="Send message">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
+                  <line x1="22" y1="2" x2="11" y2="13"></line>
+                  <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </form>
+
+        <div class="reply-footer-note">
+          <span>🌿 <strong>Seasoldier</strong>: <em>Bukan Sekadar Bicara, Tapi Aksi Nyata</em> • <span>Basis data tervalidasi &amp; diperbarui berkala</span></span>
+        </div>
+      </div>
+    </footer>
+  </div>
+
+  <!-- BACKEND CONFIG MODAL (Chatwoot Sheet Style) -->
+  <div class="modal-backdrop hidden" id="settingsModal" onclick="closeSettingsModalOnBackdrop(event)">
+    <div class="modal-sheet-card">
+      <div class="modal-sheet-handle"></div>
+      
+      <div class="modal-header">
+        <div class="modal-title">
+          <div class="modal-title-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+          </div>
+          <div>
+            <h3>Server Backend &amp; Tunnel</h3>
+            <span class="modal-sub">Konfigurasi endpoint FastAPI</span>
+          </div>
+        </div>
+        <button class="modal-close-btn" onclick="closeSettingsModal()">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <p class="modal-desc">
+          Jika membuka via <strong>GitHub Pages</strong>, masukkan URL tunnel laptop Anda (Cloudflare / LocalTunnel / Ngrok):
+        </p>
+
+        <div class="form-group">
+          <label for="customBackendUrl">Backend URL Endpoint:</label>
+          <input 
+            type="text" 
+            id="customBackendUrl" 
+            class="modal-input" 
+            placeholder="http://localhost:4001 atau https://xxxx.loca.lt"
+          >
+          <span class="field-hint">Default: <code>http://localhost:4001</code></span>
+        </div>
+
+        <div class="preset-links">
+          <button type="button" class="preset-btn" onclick="setPresetBackend('http://localhost:4001')">Localhost (4001)</button>
+          <button type="button" class="preset-btn" onclick="setPresetBackend('http://127.0.0.1:4001')">127.0.0.1</button>
+          <button type="button" class="preset-btn" onclick="setPresetBackend('')">Auto / Relative</button>
+        </div>
+
+        <div class="modal-status-box" id="modalStatusBox">
+          <div class="status-badge" id="modalStatusBadge">Belum diuji</div>
+          <div class="status-details" id="modalStatusDetails">Klik "Uji Koneksi" untuk memeriksa respon server.</div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-secondary" onclick="testBackendConnection()">Uji Koneksi</button>
+        <button type="button" class="btn-primary" onclick="saveBackendSettings()">Simpan &amp; Terapkan</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATIONS -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Markdown Parser (marked.js) -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <!-- Application Script -->
+  <script src="app.js"></script>
+</body>
+</html>
