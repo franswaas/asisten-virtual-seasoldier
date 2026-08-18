@@ -472,7 +472,7 @@ async def chat_endpoint(request: Request):
         log_error(session_id if "session_id" in locals() else "unknown", "chat_exception", str(e))
         return JSONResponse(
             status_code=500,
-            content={"error": f"Terjadi kesalahan pada server: {e}"},
+            content={"error": "Maaf, terjadi kendala saat memproses jawaban. Silakan coba beberapa saat lagi."},
         )
 
 
@@ -584,7 +584,10 @@ async def chat_stream_endpoint(request: Request):
 
     except Exception as e:
         logger.error(f"Stream endpoint error: {e}", exc_info=True)
-        return JSONResponse(status_code=500, content={"error": str(e)})
+        return JSONResponse(
+            status_code=500,
+            content={"error": "Maaf, terjadi kendala pada layanan streaming. Silakan coba beberapa saat lagi."}
+        )
 
 
 # ============================================
