@@ -1,48 +1,36 @@
 """
-Configuration for Asisten Virtual Seasoldier Indonesia.
-Centralizes system prompt, paths, and environment variables.
-Powered by Groq API + Custom RAG.
+Configuration for Asisten Virtual Seasoldier — Firebase Functions Serverless Backend.
+Centralizes system prompt, paths, model settings, and security constraints.
 """
 
 import os
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
+# Load local environment variables from .env if present
 load_dotenv(os.path.join(os.path.dirname(__file__), ".env"))
 
 # ============================================
-# ENVIRONMENT & RUNTIME
+# ENVIRONMENT & SECRETS
 # ============================================
-ENV = os.getenv("ENV", "development").lower()
+ENV = os.getenv("ENV", "production").lower()
 IS_PRODUCTION = ENV == "production"
-PORT = int(os.getenv("PORT", "4001"))
+PORT = int(os.getenv("PORT", "8080"))
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "")
 
 # Directory Paths
 BASE_DIR = os.path.dirname(__file__)
+KB_PATH = os.path.join(BASE_DIR, "knowledge_base", "seasoldier_kb.txt")
 SAVE_DIR = os.path.join(BASE_DIR, "sessions")
 LOG_DIR = os.path.join(BASE_DIR, "logs")
 
 os.makedirs(SAVE_DIR, exist_ok=True)
 os.makedirs(LOG_DIR, exist_ok=True)
 
-# ============================================
-# CORS CONFIGURATION (Restricted per environment)
-# ============================================
-if IS_PRODUCTION:
-    CORS_ORIGINS = [
-        "https://asisten-seasoldier.web.app",
-        "https://asisten-seasoldier.firebaseapp.com",
-    ]
-else:
-    CORS_ORIGINS = [
-        "https://asisten-seasoldier.web.app",
-        "https://asisten-seasoldier.firebaseapp.com",
-        "http://localhost:4001",
-        "http://127.0.0.1:4001",
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-    ]
+# CORS Origins (production — restrict to known domains)
+CORS_ORIGINS = [
+    "https://asisten-seasoldier.web.app",
+    "https://asisten-seasoldier.firebaseapp.com",
+]
 
 # ============================================
 # RATE LIMITING & SESSIONS
@@ -61,13 +49,7 @@ SESSION_MAX_HISTORY = int(os.getenv("SESSION_MAX_HISTORY", "4"))
 GROQ_MODEL = os.getenv("GROQ_MODEL", "openai/gpt-oss-120b")
 GROQ_MODEL_FAST = os.getenv("GROQ_MODEL_FAST", "openai/gpt-oss-20b")
 GROQ_TEMPERATURE = float(os.getenv("GROQ_TEMPERATURE", "0.2"))
-GROQ_MAX_TOKENS = int(os.getenv("GROQ_MAX_TOKENS", "2048"))
-
-# ============================================
-# KNOWLEDGE BASE PATHS
-# ============================================
-_KB_DIR = os.path.join(BASE_DIR, "..", "knowledge_base")
-KB_PATH = os.path.join(_KB_DIR, "seasoldier_kb.txt")
+GROQ_MAX_TOKENS = int(os.getenv("GROQ_MAX_TOKENS", "1000"))
 
 # ============================================
 # SYSTEM PROMPT — ASISTEN VIRTUAL SEASOLDIER

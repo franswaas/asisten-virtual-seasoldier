@@ -25,7 +25,7 @@
   <link rel="apple-touch-icon" href="assets/logo.jpg">
 
   <!-- Stylesheet -->
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=20260822_4">
 </head>
 <body>
   <div class="app-layout">
@@ -106,6 +106,14 @@
     <!-- HORIZONTAL QUICK CANNED PROMPTS (Chatwoot Macro Bar) -->
     <div class="macros-bar">
       <div class="macros-scroll-track" id="macrosTrack">
+        <button class="macro-chip" onclick="sendQuickQuestion('Jelaskan rangkaian acara Munas III Seasoldier di Semarang dan program Seasoldier Xperience!')">
+          <span class="macro-icon">🏛️</span>
+          <span>Munas III &amp; Xperience</span>
+        </button>
+        <button class="macro-chip" onclick="sendQuickQuestion('Siapa saja tokoh pendiri dan kolaborator kunci Seasoldier serta akun Instagram resmi mereka?')">
+          <span class="macro-icon">👥</span>
+          <span>Tokoh &amp; Pendiri</span>
+        </button>
         <button class="macro-chip" onclick="sendQuickQuestion('Bagaimana profil, sejarah, dan filosofi Seasoldier?')">
           <span class="macro-icon">🌊</span>
           <span>Profil &amp; Filosofi</span>
@@ -119,7 +127,7 @@
           <span>Aksi Bersih Pantai</span>
         </button>
         <button class="macro-chip" onclick="sendQuickQuestion('Bagaimana cara bergabung menjadi relawan (Soldier) Seasoldier?')">
-          <span class="macro-icon">👥</span>
+          <span class="macro-icon">🤝</span>
           <span>Gabung Relawan</span>
         </button>
         <button class="macro-chip" onclick="sendQuickQuestion('Apa makna dan cara membeli Gelang Komitmen Seasoldier?')">
@@ -127,7 +135,7 @@
           <span>Gelang Komitmen</span>
         </button>
         <button class="macro-chip" onclick="sendQuickQuestion('Bagaimana perusahaan bisa bekerjasama CSR dengan Seasoldier?')">
-          <span class="macro-icon">🤝</span>
+          <span class="macro-icon">🏢</span>
           <span>Kemitraan CSR</span>
         </button>
         <button class="macro-chip" onclick="sendQuickQuestion('Apa itu program edukasi Seasoldier Junior dan Pondok Pemuda?')">
@@ -302,7 +310,7 @@
 
       <div class="modal-body">
         <p class="modal-desc">
-          Jika membuka via <strong>GitHub Pages</strong>, masukkan URL tunnel laptop Anda (Cloudflare / LocalTunnel / Ngrok):
+          Pilih atau masukkan URL server backend (<strong>Firebase Cloud / Localhost / Tunnel</strong>):
         </p>
 
         <div class="form-group">
@@ -311,15 +319,15 @@
             type="text" 
             id="customBackendUrl" 
             class="modal-input" 
-            placeholder="http://localhost:4001 atau https://xxxx.loca.lt"
+            placeholder="Biarkan kosong untuk Firebase Cloud (/api) atau http://localhost:4001"
           >
-          <span class="field-hint">Default: <code>http://localhost:4001</code></span>
+          <span class="field-hint">Firebase Cloud: <code>(Kosongkan)</code> | Lokal: <code>http://localhost:4001</code></span>
         </div>
 
         <div class="preset-links">
-          <button type="button" class="preset-btn" onclick="setPresetBackend('http://localhost:4001')">Localhost (4001)</button>
+          <button type="button" class="preset-btn" onclick="setPresetBackend('')">☁️ Firebase Cloud</button>
+          <button type="button" class="preset-btn" onclick="setPresetBackend('http://localhost:4001')">💻 Localhost (4001)</button>
           <button type="button" class="preset-btn" onclick="setPresetBackend('http://127.0.0.1:4001')">127.0.0.1</button>
-          <button type="button" class="preset-btn" onclick="setPresetBackend('')">Auto / Relative</button>
         </div>
 
         <div class="modal-status-box" id="modalStatusBox">
@@ -341,6 +349,6 @@
   <!-- Markdown Parser (marked.js) -->
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
   <!-- Application Script -->
-  <script src="app.js"></script>
+  <script src="app.js?v=20260822_4"></script>
 </body>
 </html>

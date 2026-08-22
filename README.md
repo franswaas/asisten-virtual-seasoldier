@@ -1,8 +1,9 @@
 # Asisten Virtual Seasoldier Indonesia 🌊🌿
 > **Action-Based Environmental Movement — Official Virtual Assistant**
-> *Live Website:* **[https://franswaas.github.io/asisten-virtual-seasoldier/](https://franswaas.github.io/asisten-virtual-seasoldier/)**
+> *Live Website (Firebase Hosting):* **[https://spotbersih-cfc15.web.app/](https://spotbersih-cfc15.web.app/)**
+> *Live Website (GitHub Pages):* **[https://franswaas.github.io/asisten-virtual-seasoldier/](https://franswaas.github.io/asisten-virtual-seasoldier/)**
 
-Asisten Virtual resmi berbasis **FastAPI + Groq LLM (High-Speed Inference) + Compact Smart RAG Engine** untuk menyajikan informasi resmi, terverifikasi, dan komprehensif seputar gerakan lingkungan hidup independen [Seasoldier.org](https://seasoldier.org/) yang didirikan oleh **Nadine Chandrawinata** dan **Dinni Septianingrum** pada 28 Maret 2015.
+Asisten Virtual resmi berbasis **FastAPI / Firebase Cloud Functions + Groq LLM (High-Speed Inference) + Compact Smart RAG Engine** untuk menyajikan informasi resmi, terverifikasi, dan komprehensif seputar gerakan lingkungan hidup independen [Seasoldier.org](https://seasoldier.org/) yang didirikan oleh **Nadine Chandrawinata** dan **Dinni Septianingrum** pada 28 Maret 2015.
 
 Antarmuka dirancang dengan tema **Hitam-Putih Murni (Pure Noir Minimalist — Chatwoot Style Architecture)** yang modern, responsif di HP/Desktop, berkecepatan tinggi, dan aman.
 
@@ -13,6 +14,9 @@ Antarmuka dirancang dengan tema **Hitam-Putih Murni (Pure Noir Minimalist — Ch
 - 🧠 **Cerdas & Berbasis Data Resmi (Direct Smart RAG)**:
   - Mengintegrasikan basis data lengkap: Program Konservasi (#PohonUntukKehidupan, #KonservasiMangrove, Terumbu Karang Biorock, Blue Carbon NOAA/IAEA/World Bank), Aksi Sampah (#BersihkanWarisanKita, Pirolisis BBM, Ecobrick), Edukasi (Seasoldier Junior, Pondok Pemuda), Kemitraan CSR, Merchandise Gelang Komitmen, dan Direktori 21+ Chapter Daerah.
   - Memiliki catatan dinamis (*validation notice*) bahwa basis data divalidasi berkala dan menerima masukan pengguna.
+- 🔥 **Serverless Cloud Ready (Google Firebase)**:
+  - Frontend di-host di Firebase Hosting CDN super cepat.
+  - Backend dapat dijalankan sebagai Firebase Cloud Functions Gen 2 (Python FastAPI) atau backend lokal/tunnel.
 - ⚡ **Respon Instan Tanpa Delay (<1.2 detik)**:
   - Menggunakan pipeline *High-Density Compact Prompt* dan *Smart History Pruning* sehingga kebal terhadap pembatasan kuota token (*rate limit free*) dan selalu merespon cepat untuk pertanyaan ke-1, ke-2, hingga seterusnya.
 - 🎬 **Animasi Mengetik Halus (*Fluid Typewriter Streamer Queue*)**:
@@ -24,11 +28,9 @@ Antarmuka dirancang dengan tema **Hitam-Putih Murni (Pure Noir Minimalist — Ch
   - *Speech-to-Text* (Input suara langsung via mikrofon Web Speech API Bahasa Indonesia).
   - *Text-to-Speech* (Asisten dapat membacakan jawaban dengan intonasi ramah).
 - 🔒 **Keamanan & Privasi Maksimal (Zero Leak Security)**:
-  - Kunci API Groq aman di laptop via `.env` yang dilindungi `.gitignore` (tidak pernah terunggah ke GitHub).
+  - Kunci API Groq aman di serverless environment `.env` yang dilindungi `.gitignore` (tidak pernah terunggah ke GitHub).
   - Frontend murni klien statis yang tidak menyimpan kredensial sensitif.
   - Respon error backend disanitasi menyeluruh tanpa membocorkan rincian sistem.
-- ☁️ **Akses Publik 1-Klik (Cloudflare Tunnel Daemon)**:
-  - Dilengkapi skrip otomatisasi Python & batch file yang membuka tunnel HTTPS publik berkecepatan tinggi tanpa perlu daftar akun atau instalasi rumit.
 
 ---
 
@@ -36,67 +38,52 @@ Antarmuka dirancang dengan tema **Hitam-Putih Murni (Pure Noir Minimalist — Ch
 
 ```
 Asisten Virtual Seasoldier/
-├── backend/
-│   ├── config.py              # Konfigurasi, system prompt berdensitas tinggi, dan model LLM
-│   ├── main.py                # Server FastAPI REST & SSE Streaming + Sanitasi Kata
-│   ├── retrieval.py           # Custom Domain RAG Engine (BM25/TF-IDF)
-│   ├── tools.py               # Tool helper & knowledge retrieval
-│   ├── hooks.py               # Logging percakapan, analitik, dan tracking error
-│   ├── requirements.txt       # Dependensi Python backend
-│   └── .env                   # Kunci API Groq (Aman di lokal, diabaikan Git)
-├── frontend/
-│   ├── index.html             # Antarmuka web monokrom Chatwoot-style (SEO & Mobile Ready)
+├── firebase.json              # Konfigurasi Firebase Hosting & Cloud Functions
+├── .firebaserc                # Target Project ID Firebase (spotbersih-cfc15)
+├── deploy_firebase.bat        # Skrip 1-klik Windows untuk deploy ke Firebase
+├── functions/                 # Backend Serverless Firebase Cloud Functions (Python Gen 2)
+│   ├── main.py                # Cloud Function HTTPS entrypoint & FastAPI App
+│   ├── config.py              # Konfigurasi system prompt & model
+│   ├── retrieval.py           # RAG Engine (BM25 + TF-IDF)
+│   ├── tools.py               # Helper tools & topic queries
+│   ├── requirements.txt       # Dependensi Python untuk Firebase Functions
+│   ├── .env.example           # Template environment variable
+│   └── knowledge_base/
+│       └── seasoldier_kb.txt  # Basis data resmi Seasoldier
+├── frontend/                  # Antarmuka web monokrom (Firebase Hosting Public)
+│   ├── index.html             # Antarmuka Chatwoot-style (SEO & Mobile Ready)
 │   ├── style.css              # Styling Pure Noir Minimalist (100dvh + Safe Area + Markdown)
-│   ├── app.js                 # Logika streaming SSE, Typewriter Queue, STT, TTS, dan Auto-scroll
+│   ├── app.js                 # Logika streaming SSE, Typewriter Queue, STT, TTS, & Auto-detect API
 │   └── assets/
 │       └── logo.jpg           # Logo resmi Seasoldier (Favicon & Avatar)
+├── backend/                   # Standalone Python FastAPI Backend (Local Dev & Tunnel)
+│   ├── config.py              # Konfigurasi lokal
+│   ├── main.py                # Server FastAPI REST & SSE Streaming
+│   ├── retrieval.py           # Custom Domain RAG Engine
+│   └── requirements.txt       # Dependensi lokal
 ├── knowledge_base/
-│   └── seasoldier_kb.txt      # Basis data lengkap & terverifikasi (Sains, Konservasi & Chapter)
+│   └── seasoldier_kb.txt      # Basis data utama
 ├── docs/
-│   └── panduan_setup.md       # Panduan teknis lengkap & troubleshooting
-├── run_public_tunnel.py       # Skrip 1-klik untuk memulai backend & secure Cloudflare HTTPS tunnel
-├── start_public_server.bat    # Windows Batch launcher untuk kemudahan menjalankan server
-├── .gitignore                 # Proteksi file rahasia (.env, sessions, logs, cache)
+│   ├── panduan_firebase.md    # Panduan teknis lengkap migrasi & deployment Firebase
+│   └── panduan_setup.md       # Panduan teknis setup lokal & Cloudflare Tunnel
 └── README.md
 ```
 
 ---
 
-## 🚀 Panduan Menjalankan Sistem
+## 🚀 Panduan Deployment Firebase
 
-### Opsi A: 1-Klik Jalankan Server Publik (Rekomendasi)
-Cukup klik dua kali file **`start_public_server.bat`** atau jalankan perintah:
+### 1. Deploy 1-Klik ke Firebase
+Jalankan file batch **`deploy_firebase.bat`** atau ketik di terminal:
 ```bash
-python run_public_tunnel.py
+# Deploy Hosting + Cloud Functions
+firebase deploy
+
+# Atau deploy Frontend Hosting saja
+firebase deploy --only hosting
 ```
-Skrip ini akan secara otomatis:
-1. Menjalankan backend FastAPI di port `4001`.
-2. Menghubungkan tunnel secure HTTPS publik via Cloudflare.
-3. Menampilkan **Public HTTPS URL** yang siap dimasukkan ke pengaturan website GitHub Pages.
 
----
-
-### Opsi B: Jalankan Backend Lokal Saja
-```bash
-# 1. Masuk ke direktori backend
-cd backend
-
-# 2. Instal dependensi
-pip install -r requirements.txt
-
-# 3. Jalankan server FastAPI
-python main.py
-```
-Server backend lokal akan aktif di: `http://localhost:4001`
-
----
-
-## 🌐 Menghubungkan ke GitHub Pages
-1. Buka website: **[https://franswaas.github.io/asisten-virtual-seasoldier/](https://franswaas.github.io/asisten-virtual-seasoldier/)**
-2. Klik tombol **Pengaturan (⚙️)** di pojok kanan atas antarmuka.
-3. Masukkan **Public HTTPS URL** dari terminal laptop Anda (contoh: `https://xxxx.trycloudflare.com`).
-4. Klik **Uji Koneksi** lalu klik **Simpan & Terapkan**.
-5. Asisten Virtual Seasoldier langsung **Online** dan dapat digunakan oleh siapa saja di seluruh dunia!
+Panduan selengkapnya dapat dibaca di: **[`docs/panduan_firebase.md`](docs/panduan_firebase.md)**.
 
 ---
 

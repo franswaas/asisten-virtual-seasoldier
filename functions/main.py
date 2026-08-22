@@ -616,17 +616,29 @@ async def chat_stream_endpoint(request: Request):
 
 
 # ============================================
-# STATIC FILES (FRONTEND)
+# FIREBASE FUNCTIONS ENTRY POINT
 # ============================================
-FRONTEND_DIR = os.path.join(BASE_DIR, "..", "frontend")
-if os.path.exists(FRONTEND_DIR):
-    app.mount("/", StaticFiles(directory=FRONTEND_DIR, html=True), name="frontend")
+# Firebase Cloud Functions wraps FastAPI via a2wsgi adapter
+# to convert ASGI (FastAPI) → WSGI (Cloud Functions compatible)
+from firebase_functions import https_fn, options
 
+try:
+    from a2wsgi import ASGIMiddleware
+    wsgi_app = ASGIMiddleware(app)
+except ImportError:
+    # Fallback: direct WSGI-like wrapper
+    wsgi_app = None
 
-# ============================================
-# MAIN ENTRYPOINT
-# ============================================
-if __name__ == "__main__":
-    import uvicorn
-    logger.info(f"Starting Asisten Virtual Seasoldier on port {PORT}...")
-    uvicorn.run("main:app", host="0.0.0.0", port=PORT, reload=True)
+@https_fn.on_request(
+    region="asia-southeast2",
+    memory=options.MemoryOption.MB_512,
+    timeout_sec=120,
+    max_instances=10,
+)
+def api(req: https_fn.Request) -> https_fn.Response:
+    """Firebase Cloud Functions HTTPS entry point wrapping FastAPI."""
+    if wsgi_app is not None:
+        return wsgi_app(req.environ, req.start_response)
+
+    # Minimal fallback if a2wsgi not available
+    return https_fn.Response("Service starting, please retry.", status=503)

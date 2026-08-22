@@ -1,6 +1,6 @@
 # Panduan Setup & Akses Publik Asisten Virtual Seasoldier
 
-Dokumen ini menjelaskan langkah-langkah menjalankan backend di laptop secara lokal, melakukan deployment frontend ke **GitHub Pages**, dan menghubungkan keduanya via **Cloudflare HTTPS Tunnel** sehingga sistem dapat diakses secara publik oleh siapapun di internet.
+Dokumen ini menjelaskan langkah-langkah menjalankan backend di laptop secara lokal, melakukan deployment frontend ke **Firebase Hosting** dan **GitHub Pages**, serta menghubungkan keduanya via **Cloudflare HTTPS Tunnel** sehingga sistem dapat diakses secara publik oleh siapapun di internet.
 
 ---
 
@@ -10,12 +10,12 @@ Dokumen ini menjelaskan langkah-langkah menjalankan backend di laptop secara lok
 [Pengguna Publik / HP / Laptop]
        │
        ▼ (HTTPS)
-[Frontend Statis: GitHub Pages]
-https://franswaas.github.io/asisten-virtual-seasoldier/
+[Frontend Statis: Firebase Hosting CDN]
+https://asisten-seasoldier.web.app/ (atau GitHub Pages)
        │
        ▼ (Permintaan Streaming SSE / REST)
 [Cloudflare Secure HTTPS Tunnel]
-https://alpine-trip-keith-hawk.trycloudflare.com (atau subdomain dinamis baru)
+https://xxxx.trycloudflare.com
        │
        ▼ (Local Port 4001)
 [Backend Laptop: FastAPI + Python 3.10+]
@@ -43,11 +43,25 @@ Buka Windows Explorer dan **Double Click** pada file:
 
 ---
 
-## 2. Menghubungkan Backend ke GitHub Pages
+## 2. Menghubungkan Backend ke Website Firebase / HP
 
-1. Buka website resmi: **[https://franswaas.github.io/asisten-virtual-seasoldier/](https://franswaas.github.io/asisten-virtual-seasoldier/)**
+Ada 2 cara sangat mudah untuk menghubungkan backend ke website:
+
+### Opsi 1: Menggunakan Link Auto-Connect (Paling Mudah untuk HP & Laptop) ⭐
+1. Saat menjalankan `start_public_server.bat` atau `python run_public_tunnel.py`, terminal akan menampilkan:
+   ```
+   📱 LINK AUTO-CONNECT (HP & LAPTOP):
+      👉 https://asisten-seasoldier.web.app/?backend=https://xxxx.trycloudflare.com
+   ```
+2. **Di HP**: Salin/kirim link tersebut ke HP (via WhatsApp, Telegram, atau scan). Begitu dibuka di browser HP, sistem akan **langsung otomatis terhubung 100% ONLINE** tanpa perlu input manual!
+3. **Di Laptop**: Browser laptop akan otomatis terbuka ke link tersebut dan langsung terhubung.
+
+---
+
+### Opsi 2: Konfigurasi Manual via Menu Pengaturan (⚙️)
+1. Buka website: **[https://asisten-seasoldier.web.app/](https://asisten-seasoldier.web.app/)**
 2. Klik tombol ikon **⚙️ (Pengaturan Server)** di pojok kanan atas.
-3. Masukkan **Public HTTPS URL** yang tampil di terminal Anda (contoh: `https://alpine-trip-keith-hawk.trycloudflare.com`).
+3. Masukkan **Public HTTPS URL** yang tampil di terminal Anda (contoh: `https://xxxx.trycloudflare.com`).
 4. Klik **Uji Koneksi** lalu klik **Simpan & Terapkan**.
 5. Selesai! Indikator status akan berubah menjadi **Online (Hijau)** dan asisten siap digunakan.
 
@@ -68,7 +82,7 @@ Buka Windows Explorer dan **Double Click** pada file:
 
 | Kendala | Penyebab | Solusi |
 |---|---|---|
-| **Status Offline / Gagal Konek** | Terminal laptop tertutup atau URL tunnel berganti | Jalankan `python run_public_tunnel.py` dan perbarui URL di menu Pengaturan (⚙️). |
+| **Status Offline / Gagal Konek** | Terminal laptop tertutup atau URL tunnel berganti | Jalankan `start_public_server.bat` dan perbarui URL di menu Pengaturan (⚙️). |
 | **Pertanyaan Beruntun Lambat** | Kuota token berlebih pada riwayat lama | Sistem telah menerapkan pemangkasan riwayat otomatis (*pruned history*). |
 | **Layar HP Terpotong** | Browser mobile belum refresh cache | Lakukan *hard reload* pada browser HP atau buka di tab incognito. |
 

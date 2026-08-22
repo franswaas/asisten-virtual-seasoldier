@@ -11,15 +11,35 @@
 const DEFAULT_LOCAL_BACKEND = 'http://localhost:4001';
 
 function getBackendUrl() {
-  const custom = localStorage.getItem('seasoldier_backend_url');
-  if (custom !== null && custom !== undefined) return custom.trim();
+  // 1. Check URL query parameters (e.g. ?backend=https://xxxx.trycloudflare.com or ?api=...)
+  try {
+    const urlParams = new URLSearchParams(window.location.search);
+    const paramBackend = urlParams.get('backend') || urlParams.get('api');
+    if (paramBackend && paramBackend.trim()) {
+      const cleanUrl = paramBackend.trim().replace(/\/+$/, '');
+      localStorage.setItem('seasoldier_backend_url', cleanUrl);
+      return cleanUrl;
+    }
+  } catch (e) {}
 
-  // If running directly on localhost/127.0.0.1
+  // 2. Check localStorage saved custom backend
+  const custom = localStorage.getItem('seasoldier_backend_url');
+  if (custom !== null && custom !== undefined && custom.trim() !== '') {
+    return custom.trim().replace(/\/+$/, '');
+  }
+
   const h = window.location.hostname;
+  // If running directly on localhost / 127.0.0.1
   if (h === 'localhost' || h === '127.0.0.1') {
     return `http://${h}:4001`;
   }
-  // When running on GitHub Pages (username.github.io)
+
+  // If running on Firebase Hosting (*.web.app or *.firebaseapp.com)
+  if (h.includes('web.app') || h.includes('firebaseapp.com')) {
+    return ''; // Relative /api endpoint
+  }
+
+  // Fallback
   return DEFAULT_LOCAL_BACKEND;
 }
 
@@ -76,30 +96,80 @@ function getCurrentTimeString() {
 // HEALTH CHECK & CONNECTION
 // ============================================
 async function checkHealth() {
-  const url = BACKEND_URL ? `${BACKEND_URL}/health` : '/health';
   updateConnectionStatus('checking', 'Connecting');
-  
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 4000);
-    
-    const res = await fetch(url, { signal: controller.signal });
-    clearTimeout(timeoutId);
-    
-    if (res.ok) {
-      updateConnectionStatus('online', 'Online');
-    } else {
-      updateConnectionStatus('offline', 'Error');
-    }
-  } catch (err) {
-    updateConnectionStatus('offline', 'Offline');
-    // Jika diakses dari GitHub Pages dan belum diset backend URL
-    if (window.location.hostname.includes('github.io') && !localStorage.getItem('seasoldier_backend_url')) {
-      setTimeout(() => {
-        showToast('🌐 Terbuka di GitHub Pages. Klik ikon ⚙️ untuk menyambungkan Backend laptop Anda.', 'info', 6000);
-      }, 1000);
+
+  let target = (BACKEND_URL || '').trim().replace(/\/+$/, '');
+
+  // 1. Try existing target backend first
+  if (target) {
+    for (const url of [`${target}/health`, `${target}/api/health`]) {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3500);
+        const res = await fetch(url, { signal: controller.signal });
+        clearTimeout(timeoutId);
+        if (res.ok) {
+          updateConnectionStatus('online', 'Online');
+          return;
+        }
+      } catch (e) {}
     }
   }
+
+  // 2. Dynamic Discovery: Fetch active_backend.json published by launcher
+  try {
+    const metaRes = await fetch(`/active_backend.json?_t=${Date.now()}`);
+    if (metaRes.ok) {
+      const meta = await metaRes.json();
+      const discoveredUrl = (meta.backend_url || '').trim().replace(/\/+$/, '');
+      if (discoveredUrl) {
+        for (const url of [`${discoveredUrl}/health`, `${discoveredUrl}/api/health`]) {
+          try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 4000);
+            const res = await fetch(url, { signal: controller.signal });
+            clearTimeout(timeoutId);
+            if (res.ok) {
+              BACKEND_URL = discoveredUrl;
+              localStorage.setItem('seasoldier_backend_url', BACKEND_URL);
+              updateConnectionStatus('online', 'Online');
+              return;
+            }
+          } catch (e) {}
+        }
+      }
+    }
+  } catch (e) {}
+
+  // 3. Try localhost:4001 if on laptop/local network
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 1500);
+    const res = await fetch('http://localhost:4001/health', { signal: controller.signal });
+    clearTimeout(timeoutId);
+    if (res.ok) {
+      BACKEND_URL = 'http://localhost:4001';
+      localStorage.setItem('seasoldier_backend_url', BACKEND_URL);
+      updateConnectionStatus('online', 'Online');
+      return;
+    }
+  } catch (e) {}
+
+  // 4. Try default relative endpoints
+  for (const url of ['/api/health', '/health']) {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 3000);
+      const res = await fetch(url, { signal: controller.signal });
+      clearTimeout(timeoutId);
+      if (res.ok) {
+        updateConnectionStatus('online', 'Online');
+        return;
+      }
+    } catch (e) {}
+  }
+
+  updateConnectionStatus('offline', 'Offline');
 }
 
 function updateConnectionStatus(type, label) {
@@ -128,12 +198,12 @@ function showToast(message, type = 'info', duration = 3000) {
 // MODAL & SETTINGS
 // ============================================
 function openSettingsModal() {
-  customBackendUrlInput.value = localStorage.getItem('seasoldier_backend_url') || BACKEND_URL;
+  customBackendUrlInput.value = localStorage.getItem('seasoldier_backend_url') || (BACKEND_URL || '');
   const statusBadge = document.getElementById('modalStatusBadge');
   const statusDetails = document.getElementById('modalStatusDetails');
   statusBadge.textContent = 'Status: ' + statusText.textContent;
-  statusBadge.style.color = statusText.textContent === 'Online' ? '#ffffff' : '#a1a1aa';
-  statusDetails.textContent = `Endpoint: ${BACKEND_URL || '(Relative URL)'}`;
+  statusBadge.style.color = statusText.textContent.includes('Online') ? '#10b981' : '#a1a1aa';
+  statusDetails.textContent = `Endpoint: ${BACKEND_URL || '(Firebase Cloud / Relative URL)'}`;
   settingsModal.classList.remove('hidden');
 }
 
@@ -152,42 +222,48 @@ function setPresetBackend(url) {
 }
 
 async function testBackendConnection() {
-  const targetUrl = customBackendUrlInput.value.trim();
-  const testUrl = targetUrl ? `${targetUrl}/health` : '/health';
+  const rawTarget = customBackendUrlInput.value.trim();
+  const targetUrl = rawTarget.replace(/\/+$/, '');
+  const testUrls = targetUrl ? [`${targetUrl}/health`, `${targetUrl}/api/health`] : ['/api/health', '/health'];
   const badge = document.getElementById('modalStatusBadge');
   const details = document.getElementById('modalStatusDetails');
   
   badge.textContent = 'Menguji...';
   badge.style.color = '#a1a1aa';
-  details.textContent = `Menghubungi ${testUrl}...`;
+  details.textContent = `Menghubungi ${targetUrl || 'Firebase Cloud Endpoint'}...`;
 
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 4000);
-    const res = await fetch(testUrl, { signal: controller.signal });
-    clearTimeout(timeoutId);
+  for (const url of testUrls) {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 4000);
+      const res = await fetch(url, { signal: controller.signal });
+      clearTimeout(timeoutId);
 
-    if (res.ok) {
-      const data = await res.json();
-      badge.textContent = '✓ Terhubung!';
-      badge.style.color = '#ffffff';
-      details.textContent = `Model: ${data.model} | Chunks: ${data.chunks_indexed} | Status: OK`;
-      showToast('Koneksi ke backend berhasil!', 'success');
-    } else {
-      badge.textContent = '✗ Gagal (HTTP ' + res.status + ')';
-      badge.style.color = '#a1a1aa';
-      details.textContent = 'Server merespon dengan status error.';
+      if (res.ok) {
+        const data = await res.json();
+        badge.textContent = '✓ Terhubung!';
+        badge.style.color = '#10b981';
+        details.textContent = `Layanan: ${data.service || 'Asisten Seasoldier'} | Status: OK`;
+        showToast('Koneksi ke backend berhasil!', 'success');
+        return;
+      }
+    } catch (e) {
+      // try next
     }
-  } catch (e) {
-    badge.textContent = '✗ Tidak dapat terhubung';
-    badge.style.color = '#a1a1aa';
-    details.textContent = `Gagal menghubungi: ${e.message}. Pastikan backend di laptop sudah aktif.`;
   }
+
+  badge.textContent = '✗ Tidak dapat terhubung';
+  badge.style.color = '#ef4444';
+  details.textContent = `Gagal menghubungi endpoint. Pastikan backend di laptop aktif dan URL benar.`;
 }
 
 function saveBackendSettings() {
-  const newUrl = customBackendUrlInput.value.trim();
-  localStorage.setItem('seasoldier_backend_url', newUrl);
+  const newUrl = customBackendUrlInput.value.trim().replace(/\/+$/, '');
+  if (newUrl) {
+    localStorage.setItem('seasoldier_backend_url', newUrl);
+  } else {
+    localStorage.removeItem('seasoldier_backend_url');
+  }
   BACKEND_URL = newUrl;
   closeSettingsModal();
   showToast('Pengaturan backend disimpan!', 'success');
@@ -239,25 +315,45 @@ async function sendMessage(questionText) {
   chatMessages.appendChild(messageItem);
   scrollToBottom();
 
-  const endpoint = BACKEND_URL ? `${BACKEND_URL}/chat/stream` : '/chat/stream';
-  let fullAnswer = '';
+  const base = (BACKEND_URL || '').trim().replace(/\/+$/, '');
+  const streamEndpoint = base ? `${base}/chat/stream` : '/api/chat/stream';
+  const restEndpoint = base ? `${base}/chat` : '/api/chat';
 
   try {
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        question: questionText,
-        session_id: sessionId,
-      }),
-    });
+    let response;
+    let isStreamMode = true;
 
-    if (!response.ok) {
-      throw new Error(`Server error: ${response.status} ${response.statusText}`);
+    try {
+      response = await fetch(streamEndpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          question: questionText,
+          session_id: sessionId,
+        }),
+      });
+
+      if (!response.ok || !response.body) {
+        throw new Error(`Stream not available (${response.status})`);
+      }
+    } catch (streamErr) {
+      // Fallback to REST endpoint
+      isStreamMode = false;
+      statusDiv.innerHTML = `<span class="tool-status-pill">🔍 Menghubungi backend Seasoldier...</span>`;
+      response = await fetch(restEndpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          question: questionText,
+          session_id: sessionId,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Server error: ${response.status} ${response.statusText}`);
+      }
     }
 
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder('utf-8');
     let buffer = '';
     let incomingText = '';
     let renderedLength = 0;
@@ -278,7 +374,7 @@ async function sendMessage(questionText) {
       }
 
       if (renderedLength < incomingText.length || !isStreamFinished) {
-        typingTimer = setTimeout(updateTypingAnimation, 28);
+        typingTimer = setTimeout(updateTypingAnimation, 24);
       } else {
         // Finished typing all incoming text
         contentDiv.classList.remove('streaming-cursor');
@@ -305,43 +401,56 @@ async function sendMessage(questionText) {
     }
 
     // Start typewriter loop
-    typingTimer = setTimeout(updateTypingAnimation, 30);
+    typingTimer = setTimeout(updateTypingAnimation, 25);
 
-    while (true) {
-      const { value, done } = await reader.read();
-      if (done) break;
+    if (isStreamMode) {
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder('utf-8');
 
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      buffer = lines.pop() || '';
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
 
-      for (const line of lines) {
-        if (line.startsWith('data: ')) {
-          try {
-            const data = JSON.parse(line.slice(6));
-            
-            if (data.type === 'token') {
-              if (statusDiv.innerHTML) statusDiv.innerHTML = '';
-              incomingText += data.content;
-            } else if (data.type === 'tool_start') {
-              statusDiv.innerHTML = `<span class="tool-status-pill">🔍 Mengakses basis data Seasoldier...</span>`;
-            } else if (data.type === 'done') {
-              if (data.session_id) {
-                sessionId = data.session_id;
-                localStorage.setItem('seasoldier_session_id', sessionId);
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() || '';
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.slice(6));
+              
+              if (data.type === 'token') {
+                if (statusDiv.innerHTML) statusDiv.innerHTML = '';
+                incomingText += data.content;
+              } else if (data.type === 'tool_start') {
+                statusDiv.innerHTML = `<span class="tool-status-pill">🔍 Mengakses basis data Seasoldier...</span>`;
+              } else if (data.type === 'done') {
+                if (data.session_id) {
+                  sessionId = data.session_id;
+                  localStorage.setItem('seasoldier_session_id', sessionId);
+                }
+              } else if (data.type === 'error') {
+                statusDiv.innerHTML = '';
+                incomingText += `\n\n*${data.message || 'Terjadi kendala saat memproses jawaban.'}*`;
               }
-            } else if (data.type === 'error') {
-              statusDiv.innerHTML = '';
-              incomingText += `\n\n*${data.message || 'Terjadi kendala saat memproses jawaban.'}*`;
+            } catch (jsonErr) {
+              // Ignore partial SSE lines
             }
-          } catch (jsonErr) {
-            // Ignore partial SSE lines
           }
         }
       }
+      isStreamFinished = true;
+    } else {
+      // REST Response
+      const restData = await response.json();
+      if (restData.session_id) {
+        sessionId = restData.session_id;
+        localStorage.setItem('seasoldier_session_id', sessionId);
+      }
+      incomingText = restData.answer || restData.error || 'Tidak ada jawaban dari server.';
+      isStreamFinished = true;
     }
-
-    isStreamFinished = true;
 
   } catch (err) {
     console.error('Chat error:', err);
@@ -349,7 +458,11 @@ async function sendMessage(questionText) {
     statusDiv.innerHTML = '';
     contentDiv.innerHTML = `
       <p>⚠️ <strong>Gagal mendapatkan respon dari server backend.</strong></p>
-      <p style="font-size:0.75rem; color:var(--text-muted); margin-top:4px;">Pastikan backend di laptop aktif pada <code>${BACKEND_URL || 'localhost:4001'}</code>.</p>
+      <p style="font-size:0.78rem; color:var(--text-muted); margin-top:4px;">Server backend di <code>${BACKEND_URL || 'localhost:4001'}</code> sedang offline atau URL tunnel telah berganti.</p>
+      <div style="margin-top:10px; display:flex; flex-wrap:wrap; gap:8px; align-items:center;">
+        <button class="action-btn" onclick="openSettingsModal()" style="font-size:0.78rem; padding:4px 10px; border-radius:6px; background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.15); color:var(--text-main); cursor:pointer;">⚙️ Buka Pengaturan Server</button>
+        <span style="font-size:0.75rem; color:var(--text-muted);">atau buka link dari terminal <code>start_public_server.bat</code></span>
+      </div>
     `;
     showToast('Koneksi terputus ke server backend.', 'error');
   } finally {

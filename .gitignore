@@ -3,6 +3,9 @@
 .env.local
 .env.*.local
 backend/.env
+backend/.env.local
+functions/.env
+functions/.env.local
 
 # Python bytecode & cache
 __pycache__/
@@ -22,7 +25,13 @@ ENV/
 # Session storage & runtime logs
 backend/sessions/
 backend/logs/
+functions/sessions/
+functions/logs/
 *.log
+*.jsonl
+
+# Dynamic tunnel config (contains ephemeral URLs)
+frontend/active_backend.json
 
 # Cloudflare / Tunnel binaries
 cloudflared.exe
